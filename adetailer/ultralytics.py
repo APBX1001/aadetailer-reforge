@@ -9,7 +9,6 @@ from torchvision.transforms.functional import to_pil_image
 
 from adetailer import PredictOutput
 from adetailer.common import create_mask_from_bbox
-import numpy as np
 
 if TYPE_CHECKING:
     import torch
@@ -62,11 +61,12 @@ def mask_to_pil(masks: torch.Tensor, shape: tuple[int, int]) -> list[Image.Image
     """
     Parameters
     ----------
-    masks: torch.Tensor, dtype=torch.float32, shape=(N, H, W).
-        The device can be CUDA, but `to_pil_image` takes care of that.
+    masks: torch.Tensor, dtype=torch.float32 or torch.uint8, shape=(N, H, W).
+        uint8 tensor is expected to have values 0 or 1 (not 0-255).
 
     shape: tuple[int, int]
         (W, H) of the original image
     """
-    masks_uint8 = (masks.cpu().numpy() * 255).astype(np.uint8)
-    return [to_pil_image(mask, mode="L").resize(shape) for mask in masks_uint8]
+    masks = masks.float()
+    n = masks.shape[0]
+    return [to_pil_image(masks[i], mode="L").resize(shape) for i in range(n)]
